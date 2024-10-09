@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "735367453423",
+    "project_id": "whatsapp-55ccd",
+    "storage_bucket": "whatsapp-55ccd.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:735367453423:android:417793775abf40a8e0591a",
+        "android_client_info": {
+          "package_name": "com.junio.whatsapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxRPza07Z-OBqyDxRyo-ZzRZxu-SsvgS8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
