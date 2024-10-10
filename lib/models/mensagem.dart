@@ -1,9 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Mensagem {
   String idUsuario;
   String mensagem;
   String urlImagem;
   String tipo;
-  String hora;
+  Timestamp hora;
   Mensagem({
     required this.idUsuario,
     required this.mensagem,

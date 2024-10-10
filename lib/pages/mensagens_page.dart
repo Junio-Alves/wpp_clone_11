@@ -17,28 +17,18 @@ class _MensagensPageState extends State<MensagensPage> {
   final db = FirebaseFirestore.instance;
   String? idUsuarioLogado;
   String? idUsuarioDestinatario;
-  List<String> mensagens = [
-    "Oi, como você está?",
-    "Estou bem, e você?",
-    "Também estou bem! O que vai fazer hoje?",
-    "Ainda não sei, talvez saia mais tarde. E você?",
-    "Vou trabalhar um pouco e depois descansar.",
-    "Parece um bom plano!",
-    "Se quiser, podemos sair juntos mais tarde.",
-    "Claro! Me avisa a hora.",
-    "Por volta das 18h, pode ser?",
-    "Perfeito, combinado!"
-  ];
   enviarMensagem() {
     final textoMensagem = mensagemController.text;
     final dateTime = DateTime.now();
+    final timeStamp =
+        Timestamp.fromMillisecondsSinceEpoch(dateTime.millisecondsSinceEpoch);
     if (textoMensagem.isNotEmpty) {
       final mensagem = Mensagem(
         idUsuario: idUsuarioLogado!,
         mensagem: textoMensagem,
         urlImagem: "",
         tipo: "texto",
-        hora: "${dateTime.hour}:${dateTime.minute}",
+        hora: timeStamp,
       );
       salvarMensagem(
         idRemetente: idUsuarioLogado!,
@@ -61,6 +51,7 @@ class _MensagensPageState extends State<MensagensPage> {
         .collection("mensagens")
         .doc(idRemetente)
         .collection(idDestinatario)
+        .orderBy("hora:", descending: true)
         .snapshots();
   }
 
