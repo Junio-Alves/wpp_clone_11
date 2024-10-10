@@ -19,16 +19,13 @@ class _MensagensPageState extends State<MensagensPage> {
   String? idUsuarioDestinatario;
   enviarMensagem() {
     final textoMensagem = mensagemController.text;
-    final dateTime = DateTime.now();
-    final timeStamp =
-        Timestamp.fromMillisecondsSinceEpoch(dateTime.millisecondsSinceEpoch);
     if (textoMensagem.isNotEmpty) {
       final mensagem = Mensagem(
         idUsuario: idUsuarioLogado!,
         mensagem: textoMensagem,
         urlImagem: "",
         tipo: "texto",
-        hora: timeStamp,
+        hora: Timestamp.now(),
       );
       salvarMensagem(
         idRemetente: idUsuarioLogado!,
