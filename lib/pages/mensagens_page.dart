@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:myapp/models/mensagem.dart';
 import 'package:myapp/models/usuario.dart';
 import 'package:myapp/widgets/caixa_mensagem_widget.dart';
+import 'package:myapp/widgets/mensagem_align_widget.dart';
 
 class MensagensPage extends StatefulWidget {
   final Usuario usuario;
@@ -120,27 +121,11 @@ class _MensagensPageState extends State<MensagensPage> {
                     final color = idUsuarioLogado != item["idUsuario"]
                         ? Colors.white
                         : const Color(0xffd2ffa5);
-                    return Align(
-                      alignment: aligment,
-                      child: Padding(
-                        padding: const EdgeInsets.all(6),
-                        child: Container(
-                          width: larguraContainer,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: color,
-                            borderRadius: const BorderRadius.all(
-                              Radius.circular(8),
-                            ),
-                          ),
-                          child: Text(
-                            item["mensagem"],
-                            style: const TextStyle(
-                              fontSize: 15,
-                            ),
-                          ),
-                        ),
-                      ),
+                    return MensagemAlignWidget(
+                      aligment: aligment,
+                      larguraContainer: larguraContainer,
+                      color: color,
+                      item: item,
                     );
                   },
                 ),
