@@ -48,7 +48,7 @@ class _MensagensPageState extends State<MensagensPage> {
         .collection("mensagens")
         .doc(idRemetente)
         .collection(idDestinatario)
-        .orderBy("hora", descending: true)
+        .orderBy("hora", descending: false)
         .snapshots();
   }
 
