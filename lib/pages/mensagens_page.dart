@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:myapp/models/conversa.dart';
 import 'package:myapp/models/mensagem.dart';
 import 'package:myapp/models/usuario.dart';
 import 'package:myapp/widgets/caixa_mensagem_widget.dart';
@@ -23,6 +25,10 @@ class _MensagensPageState extends State<MensagensPage> {
   final db = FirebaseFirestore.instance;
   String? idUsuarioLogado;
   String? idUsuarioDestinatario;
+  final mensagemController = TextEditingController();
+  final controller = StreamController<QuerySnapshot>.broadcast();
+  final scrollController = ScrollController();
+
   enviarMensagem() {
     final textoMensagem = mensagemController.text;
     if (textoMensagem.isNotEmpty) {
@@ -48,16 +54,22 @@ class _MensagensPageState extends State<MensagensPage> {
     }
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> recuperarMensagens(
+  salvarConversa(
     String idRemetente,
     String idDestinatario,
-  ) {
-    return db
-        .collection("mensagens")
-        .doc(idRemetente)
-        .collection(idDestinatario)
-        .orderBy("hora", descending: false)
-        .snapshots();
+    Mensagem mensagem,
+  ) async {
+    final conversa = Conversa(
+      idRemetente: idRemetente,
+      idDestinatario: idDestinatario,
+      nome: widget.usuario.nome!,
+      urlImagem: widget.usuario.urlImagem!,
+      mensagem: mensagem.mensagem,
+      tipo: mensagem.tipo,
+      hora: mensagem.hora,
+    );
+
+    conversa.salvar();
   }
 
   salvarMensagem({
@@ -72,6 +84,8 @@ class _MensagensPageState extends State<MensagensPage> {
         .add(
           mensagem.topMap(),
         );
+    salvarConversa(idUsuarioLogado!, idUsuarioDestinatario!, mensagem);
+    salvarConversa(idUsuarioDestinatario!, idUsuarioLogado!, mensagem);
     mensagemController.clear();
   }
 
@@ -79,9 +93,10 @@ class _MensagensPageState extends State<MensagensPage> {
     final auth = FirebaseAuth.instance;
     idUsuarioLogado = auth.currentUser!.uid;
     idUsuarioDestinatario = widget.usuario.idUsuario;
+    adicionarListenerMensagens();
   }
-  
-  enviarImagem(File image) async{
+
+  enviarImagem(File image) async {
     final storage = FirebaseStorage.instance;
     final auth = FirebaseAuth.instance;
     if (auth.currentUser != null) {
@@ -89,33 +104,64 @@ class _MensagensPageState extends State<MensagensPage> {
           storage.ref().child("perfil").child("${auth.currentUser!.uid}.jpg");
       await pastaRaiz.putFile(image);
       final urlImage = await pastaRaiz.getDownloadURL();
-      
-      final mensagem = Mensagem(idUsuario: idUsuarioLogado!, mensagem: "", urlImagem: urlImage, tipo: "imagem", hora: Timestamp.now(),);
-      salvarMensagem(idRemetente: idUsuarioLogado!, idDestinatario: idUsuarioDestinatario!, mensagem: mensagem,);
-       salvarMensagem(idRemetente: idUsuarioDestinatario!, idDestinatario: idUsuarioLogado!, mensagem: mensagem,);
-    }
 
+      final mensagem = Mensagem(
+        idUsuario: idUsuarioLogado!,
+        mensagem: "",
+        urlImagem: urlImage,
+        tipo: "imagem",
+        hora: Timestamp.now(),
+      );
+      salvarMensagem(
+        idRemetente: idUsuarioLogado!,
+        idDestinatario: idUsuarioDestinatario!,
+        mensagem: mensagem,
+      );
+      salvarMensagem(
+        idRemetente: idUsuarioDestinatario!,
+        idDestinatario: idUsuarioLogado!,
+        mensagem: mensagem,
+      );
+    }
   }
 
-  escolherOrigem(bool isCamera) async{
+  escolherOrigem(bool isCamera) async {
     final imagePicker = ImagePicker();
     XFile? pickedImage;
     File? image;
-    if(isCamera == true){
+    if (isCamera == true) {
       pickedImage = await imagePicker.pickImage(source: ImageSource.camera);
-    }else{
+    } else {
       pickedImage = await imagePicker.pickImage(source: ImageSource.gallery);
     }
-    if(pickedImage != null){
+    if (pickedImage != null) {
       image = File(pickedImage.path);
       enviarImagem(image);
     }
+  }
 
-  }
   enviarFoto() {
-    popUpOrigemImagem(context:  context,selecinarOrigem:  escolherOrigem,title: "Escolha a origem");
+    popUpOrigemImagem(
+        context: context,
+        selecinarOrigem: escolherOrigem,
+        title: "Escolha a origem");
   }
-  final mensagemController = TextEditingController();
+
+  adicionarListenerMensagens() async {
+    final stream = db
+        .collection("mensagens")
+        .doc(idUsuarioLogado)
+        .collection(idUsuarioDestinatario!)
+        .orderBy("hora", descending: false)
+        .snapshots();
+
+    stream.listen((dados) {
+      controller.add(dados);
+      Timer(const Duration(seconds: 1), () {
+        scrollController.jumpTo(scrollController.position.maxScrollExtent);
+      });
+    });
+  }
 
   @override
   void initState() {
@@ -126,7 +172,7 @@ class _MensagensPageState extends State<MensagensPage> {
   @override
   Widget build(BuildContext context) {
     Widget stream = StreamBuilder(
-      stream: recuperarMensagens(idUsuarioLogado!, idUsuarioDestinatario!),
+      stream: controller.stream,
       builder: (context, snapshot) {
         switch (snapshot.connectionState) {
           case ConnectionState.none:
@@ -149,6 +195,7 @@ class _MensagensPageState extends State<MensagensPage> {
             } else {
               return Expanded(
                 child: ListView.builder(
+                  controller: scrollController,
                   itemCount: querySnapshot!.docs.length,
                   itemBuilder: (context, index) {
                     List<DocumentSnapshot> mensagens = querySnapshot.docs;
@@ -161,12 +208,18 @@ class _MensagensPageState extends State<MensagensPage> {
                     final color = idUsuarioLogado != item["idUsuario"]
                         ? Colors.white
                         : const Color(0xffd2ffa5);
-                    return item["tipo"] == "texto" ? MensagemAlignWidget(
-                      aligment: aligment,
-                      larguraContainer: larguraContainer,
-                      color: color,
-                      item: item,
-                    ) : ImageAlignWidget(aligment: aligment, larguraContainer: larguraContainer, color: color, item: item) ;
+                    return item["tipo"] == "texto"
+                        ? MensagemAlignWidget(
+                            aligment: aligment,
+                            larguraContainer: larguraContainer,
+                            color: color,
+                            item: item,
+                          )
+                        : ImageAlignWidget(
+                            aligment: aligment,
+                            larguraContainer: larguraContainer,
+                            color: color,
+                            item: item);
                   },
                 ),
               );

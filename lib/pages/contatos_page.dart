@@ -19,7 +19,6 @@ class _ContatosPageState extends State<ContatosPage> {
     for (final usuario in querySnapshot.docs) {
       if (usuario.id != currentUser!.uid) {
         final dados = usuario.data();
-        print(usuario.id);
         final user = Usuario(
           idUsuario: usuario.id,
           nome: dados["Nome"],
