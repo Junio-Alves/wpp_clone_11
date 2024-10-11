@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-Future popUpEditImagem(BuildContext context, Function(bool) editarFoto) {
+Future popUpOrigemImagem({required BuildContext context,required Function(bool) selecinarOrigem, String title = "Editar foto de perfil"}) {
   return showDialog(
     context: context,
     builder: (context) {
@@ -8,18 +8,18 @@ Future popUpEditImagem(BuildContext context, Function(bool) editarFoto) {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              "Editar foto de perfil",
-              style: TextStyle(
+            Text(
+              title,
+              style: const TextStyle(
                 fontSize: 20,
               ),
             ),
             TextButton(
-              onPressed: () => editarFoto(true),
+              onPressed: () => selecinarOrigem(true),
               child: const Text("Camera"),
             ),
             TextButton(
-              onPressed: () => editarFoto(false),
+              onPressed: () => selecinarOrigem(false),
               child: const Text("Galeria"),
             )
           ],

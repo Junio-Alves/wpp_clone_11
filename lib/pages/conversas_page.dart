@@ -1,5 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:myapp/models/conversa.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:myapp/models/usuario.dart';
 
 class ConversasPage extends StatefulWidget {
   const ConversasPage({super.key});
@@ -9,57 +12,57 @@ class ConversasPage extends StatefulWidget {
 }
 
 class _ConversasPageState extends State<ConversasPage> {
-  List<Conversa> conversas = [
-    Conversa(
-      caminhoPerfil: "assets/images/perfil5.jpg",
-      nome: "Jamilton Damasceno",
-      mensagem: "Olá,Tudo bem?",
-    ),
-    Conversa(
-      caminhoPerfil: "assets/images/perfil4.jpg",
-      nome: "Marcela Silva",
-      mensagem: "Vou jogar tenis hoje",
-    ),
-    Conversa(
-      caminhoPerfil: "assets/images/perfil3.jpg",
-      nome: "Lucas Ferreira",
-      mensagem: "Vai hj para o estagio?",
-    ),
-    Conversa(
-      caminhoPerfil: "assets/images/perfil2.jpg",
-      nome: "Carla Carneiro",
-      mensagem: "Me faz o pix",
-    ),
-    Conversa(
-      caminhoPerfil: "assets/images/perfil1.jpg",
-      nome: "Renan Sabino",
-      mensagem: "cade teu irmao",
-    ),
-  ];
+  String? idUsuarioLogado;
+  recuperarConversas() async {
+    final store = FirebaseFirestore.instance;
+    final auth = FirebaseAuth.instance;
+    idUsuarioLogado = auth.currentUser!.uid;
+    if (idUsuarioLogado != null) {
+      final querySnapshot =
+          await store.collection("mensagens").doc("$idUsuarioLogado").get();
+      print("aqui");
+      final data = querySnapshot.data() as Map<String, dynamic>;
+      data.forEach((key, value) {
+        print("$key:$value");
+      });
+    }
+  }
+
+  abrirConversa(Usuario usuario) {
+    Navigator.pushNamed(context, "/conversa", arguments: usuario);
+  }
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: ListView.builder(
-        itemCount: conversas.length,
-        itemBuilder: (context, index) {
-          return Column(
-            children: [
-              ListTile(
-                leading: CircleAvatar(
-                  radius: 30,
-                  backgroundImage: AssetImage(
-                    conversas[index].caminhoPerfil,
-                  ),
+    return Scaffold(
+      body: FutureBuilder(
+        future: recuperarConversas(),
+        builder: (context, snapshot) {
+          switch (snapshot.connectionState) {
+            case ConnectionState.none:
+            case ConnectionState.waiting:
+              return const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    Text("Carregando Contatos!")
+                  ],
                 ),
-                title: Text(
-                  conversas[index].nome,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-                subtitle: Text(conversas[index].mensagem),
-              ),
-            ],
-          );
+              );
+
+            case ConnectionState.active:
+            case ConnectionState.done:
+              return Container();
+            default:
+              return Container();
+          }
         },
       ),
     );

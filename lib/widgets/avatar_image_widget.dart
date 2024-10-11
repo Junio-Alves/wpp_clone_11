@@ -40,7 +40,7 @@ class AvatarImageWidget extends StatelessWidget {
           right: 0,
           child: FloatingActionButton(
             backgroundColor: Colors.green,
-            onPressed: () => popUpEditImagem(context, editarFoto),
+            onPressed: () => popUpOrigemImagem(context:  context,selecinarOrigem:  editarFoto),
             child: const Icon(
               Icons.edit,
               color: Colors.white,

@@ -1,9 +1,14 @@
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:myapp/models/mensagem.dart';
 import 'package:myapp/models/usuario.dart';
 import 'package:myapp/widgets/caixa_mensagem_widget.dart';
+import 'package:myapp/widgets/edit_image_widget.dart';
+import 'package:myapp/widgets/image_align_widget.dart';
 import 'package:myapp/widgets/mensagem_align_widget.dart';
 
 class MensagensPage extends StatefulWidget {
@@ -28,11 +33,13 @@ class _MensagensPageState extends State<MensagensPage> {
         tipo: "texto",
         hora: Timestamp.now(),
       );
+      //salvando para usuario logado
       salvarMensagem(
         idRemetente: idUsuarioLogado!,
         idDestinatario: idUsuarioDestinatario!,
         mensagem: mensagem,
       );
+      //salvando para remetente
       salvarMensagem(
         idRemetente: idUsuarioDestinatario!,
         idDestinatario: idUsuarioLogado!,
@@ -73,8 +80,41 @@ class _MensagensPageState extends State<MensagensPage> {
     idUsuarioLogado = auth.currentUser!.uid;
     idUsuarioDestinatario = widget.usuario.idUsuario;
   }
+  
+  enviarImagem(File image) async{
+    final storage = FirebaseStorage.instance;
+    final auth = FirebaseAuth.instance;
+    if (auth.currentUser != null) {
+      final pastaRaiz =
+          storage.ref().child("perfil").child("${auth.currentUser!.uid}.jpg");
+      await pastaRaiz.putFile(image);
+      final urlImage = await pastaRaiz.getDownloadURL();
+      
+      final mensagem = Mensagem(idUsuario: idUsuarioLogado!, mensagem: "", urlImagem: urlImage, tipo: "imagem", hora: Timestamp.now(),);
+      salvarMensagem(idRemetente: idUsuarioLogado!, idDestinatario: idUsuarioDestinatario!, mensagem: mensagem,);
+       salvarMensagem(idRemetente: idUsuarioDestinatario!, idDestinatario: idUsuarioLogado!, mensagem: mensagem,);
+    }
 
-  enviarFoto() {}
+  }
+
+  escolherOrigem(bool isCamera) async{
+    final imagePicker = ImagePicker();
+    XFile? pickedImage;
+    File? image;
+    if(isCamera == true){
+      pickedImage = await imagePicker.pickImage(source: ImageSource.camera);
+    }else{
+      pickedImage = await imagePicker.pickImage(source: ImageSource.gallery);
+    }
+    if(pickedImage != null){
+      image = File(pickedImage.path);
+      enviarImagem(image);
+    }
+
+  }
+  enviarFoto() {
+    popUpOrigemImagem(context:  context,selecinarOrigem:  escolherOrigem,title: "Escolha a origem");
+  }
   final mensagemController = TextEditingController();
 
   @override
@@ -121,12 +161,12 @@ class _MensagensPageState extends State<MensagensPage> {
                     final color = idUsuarioLogado != item["idUsuario"]
                         ? Colors.white
                         : const Color(0xffd2ffa5);
-                    return MensagemAlignWidget(
+                    return item["tipo"] == "texto" ? MensagemAlignWidget(
                       aligment: aligment,
                       larguraContainer: larguraContainer,
                       color: color,
                       item: item,
-                    );
+                    ) : ImageAlignWidget(aligment: aligment, larguraContainer: larguraContainer, color: color, item: item) ;
                   },
                 ),
               );
